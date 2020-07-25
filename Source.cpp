@@ -13,6 +13,7 @@
 #include "Shader.h"
 
 #include <iostream>
+#include <map>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -75,6 +76,8 @@ int main()
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// build and compile shaders
 	// -------------------------
@@ -157,7 +160,6 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
 	// plane VAO
 	unsigned int planeVAO, planeVBO;
 	glGenVertexArrays(1, &planeVAO);
@@ -169,7 +171,6 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
 	// transparent VAO
 	unsigned int transparentVAO, transparentVBO;
 	glGenVertexArrays(1, &transparentVAO);
@@ -187,11 +188,11 @@ int main()
 	// -------------
 	unsigned int cubeTexture = loadTexture("C:\\Users\\jonik\\Desktop\\OpenGL\\best_opengl_hackaton\\resources\\textures\\marble.jpg");
 	unsigned int floorTexture = loadTexture("C:\\Users\\jonik\\Desktop\\OpenGL\\best_opengl_hackaton\\resources\\textures\\metal.png");
-	unsigned int transparentTexture = loadTexture("C:\\Users\\jonik\\Desktop\\OpenGL\\best_opengl_hackaton\\resources\\textures\\grass.png");
+	unsigned int transparentTexture = loadTexture("C:\\Users\\jonik\\Desktop\\OpenGL\\best_opengl_hackaton\\resources\\textures\\blending_transparent_window.png");
 
-	// transparent vegetation locations
+	// transparent window locations
 	// --------------------------------
-	vector<glm::vec3> vegetation
+	vector<glm::vec3> windows
 	{
 		glm::vec3(-1.5f, 0.0f, -0.48f),
 		glm::vec3(1.5f, 0.0f, 0.51f),
@@ -219,6 +220,15 @@ int main()
 		// -----
 		processInput(window);
 
+		// sort the transparent windows before rendering
+		// ---------------------------------------------
+		std::map<float, glm::vec3> sorted;
+		for (unsigned int i = 0; i < windows.size(); i++)
+		{
+			float distance = glm::length(camera.Position - windows[i]);
+			sorted[distance] = windows[i];
+		}
+
 		// render
 		// ------
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -226,11 +236,11 @@ int main()
 
 		// draw objects
 		shader.use();
-		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		shader.setMat4("view", view);
+		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 model = glm::mat4(1.0f);
 		shader.setMat4("projection", projection);
+		shader.setMat4("view", view);
 
 		// cubes
 		glBindVertexArray(cubeVAO);
@@ -250,12 +260,13 @@ int main()
 		shader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		// vegetation
+		// windows (from furthest to nearest)
 		glBindVertexArray(transparentVAO);
 		glBindTexture(GL_TEXTURE_2D, transparentTexture);
-		for (unsigned int i = 0; i < vegetation.size(); i++)
+		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
 		{
 			model = glm::mat4(1.0f);
-			model = glm::translate(model, vegetation[i]);
+			model = glm::translate(model, it->second);
 			shader.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
