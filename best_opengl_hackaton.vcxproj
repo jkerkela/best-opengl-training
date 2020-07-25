@@ -27,12 +27,15 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
-    <ClInclude Include="Shader_v.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="colors_shader.fs" />
     <None Include="colors_shader.vs" />
+    <None Include="shader.fs" />
+    <None Include="shader_single_color.fs" />
+    <None Include="shader_single_color.vs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
